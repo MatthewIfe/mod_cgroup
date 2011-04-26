@@ -1,0 +1,12 @@
+policy_module(mod_cgroup, 1.0.0)
+
+gen_require(`
+	type httpd_t, cgroup_t;
+')
+
+gen_tunable(httpd_cgroup_control, `false')
+
+tunable_policy(httpd_cgroup_control, `
+        list_dirs_pattern(httpd_t, cgroup_t, cgroup_t)
+        rw_files_pattern(httpd_t, cgroup_t, cgroup_t)
+')

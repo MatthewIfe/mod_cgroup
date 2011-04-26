@@ -1,0 +1,252 @@
+mod_cgroup - Resource management per vhost.
+
+PURPOSE
+-------
+
+mod_cgroup provides a system administrator with the capability to provide predictable service levels
+for each virtual host declared in httpd.
+
+mod_cgroup can be used for:
+ - Offering grades of service per virtual host or a group of virtual hosts.
+ - Protecting other virtual hosts from problematic resource abuse in another vhost.
+ - Penalizing a virtual host which fails to respect resouce limitations.
+ - Ensuring a predictable capacity level is provided to all web services.
+
+HOW TO USE
+----------
+
+CGroup
+Description: Declares the CGroup a vhost will migrate to during content processing.
+Syntax: CGroup path 
+Default: /
+Context: server config, virtual host
+
+You use this parameter to declare the cgroup name to migrate a vhost to before processing.
+This takes the format used by libcgroup and cgconfig.conf MINUS the controllers.
+e.g "/vhost1", "/apache/vhost2"
+
+
+DefaultCGroup
+Description: Declares the CGroup you relinquish to once processing has finished.
+Syntax: DefaultCGroup path
+Default: /
+Context: server config
+
+This parameter sets the cgruop to migrate to once processing of content has finished. This 
+prevents you keeping workers in old cgroups for a vhost.
+This takes the format used by libcgroup and cgconfig.conf MINUS the controllers.
+e.g "/vhost1", "/apache/vhost2"
+
+
+RelinquishCGroup
+Description: Enabled or disables relinquishment of cgroups.
+Syntax: RelinquishCgroup on|off
+Default: on
+Context: server config
+
+This parameter controls the behaviour of mod_cgroup once processing has finished. In nearly
+all circumstances you will want to keep this turned on as it ensures idle workers dont hang around
+in old cgroups.
+Depending on the future development of new controllers for control groups there might be an advantage for
+disabling the default behaviour.
+
+
+Note that to use this module you must have pre-configured cgroups designed to honour whatever service constraints
+you want to declare. Typically this is done using cgconfig.conf in /etc.
+
+
+
+REQUIREMENTS
+-----------
+
+This module is purposely designed to work on Linux only.
+The module requires a version of linux which comes with a functioning cgroups implementation.
+The libcgroup library must be installed for the module to work as expected. It was written on version 0.36
+however its likely to work on most of the earlier releases of this library.
+This is an apache2 module only.
+
+LIMITATIONS
+-----------
+
+YOUR MILEAGE WILL VARY BY THE TYPES OF CGROUPS YOU CONFIGURE.
+
+Currently mod_cgroup offers no facilities to declare specific controllers in the group. Thus all controllers are migrated
+to when you migrate to a cgroup.
+
+This module relies on libcgroup to function. If this is not installed this module will not work as expected instead you
+will likely fail to start apache properly.
+
+The module checks cgroups access on startup. If it cannot write to the cgroup, the module is implicitly disabled.
+
+The subject apache runs in MUST be able to write to the cgroups files declared in the cgconfig. This not only means setting
+the cgroup tasks file as writable by the apache user but ALSO (if being used) any mandatory access control mechanisms allowing
+apache to write to the files too (such as SELinux, which under the default policy as of writing does not permit this).
+An example is provided below describing how to use the module including access issues you may come accross.
+
+Certain controllers (such as the memory controller) will effectively OOM pids charged in their control group with using
+too much memory. Under certain circumstances this could sometimes kill requests mid-flight of processing ANOTHER vhost.
+
+For example, if worker 1 in cgroup 1 allocates 80M of memory then worker 1 handles a request in cgroup 2 WHILST worker 2 handles
+another 80M allocation in cgroup 1, if theres insufficient memory in cgroup 1, OOM killer MAY choose to kill worker 1 mid request
+to free up space for worker 2.
+
+The circumstances of this happening are unlikely, because oom-killer will attempt to kill tasks that reside inside
+of its own cgroup.
+
+WARNING: The module offers no facility to prevent virtual hosts simply migrating themselves out of the cgroup
+they are in before processing their request. This is because apache by default needs write access to manage the tasks
+files used in cgroups. Whilst this is unlikely you should be vigilant to this possibility.
+
+MEMORY CONTROLLER
+-----------------
+
+One cool thing about the memory controller is that it will 'charge' pages that were used in that cgroup even if the task migrates
+to another cgroup!
+
+What this means is that each individual vhost (or group of) is entirely responsible for the pages they accumlate within that
+group! So a seperate vhost does not pay for the overused memory of the original vhost.
+
+SELINUX SUPPORT
+---------------
+
+SELinux by default will prevent mod_cgroup from running properly by preventing access to the relevent tasks file.
+SELinux support for mod_cgroup is provided using the file mod_cgroup.pp. To enable it. Run:
+  semodule - i mod_cgroup.pp
+  setsebool -P httpd_cgroup_control 1
+
+EXAMPLE
+-------
+In the following example we give vhost2 much less memory to play with than vhost1, we also degrade outbound throughput to
+prevent the host using too much bandwidth. Finally we offer less CPU time when under high cpu load.
+
+In httpd.conf
+
+##
+LoadModule modules/mod_cgroup.so
+
+NameVirtualHost *:80
+DefaultCGroup /daemons/lamp
+CGroup /daemons/lamp
+RelinquishCGroup on
+
+<VirtualHost *:80>
+   ServerName vhost1.com
+   CGroup /daemons/lamp/vhost1
+   DocumentRoot /var/www/html1
+</VirtualHost>
+
+<VirtualHost *:80>
+   ServerName vhost2.com
+   CGroup /daemons/lamp/vhost2
+   DocumentRoot /var/www/html2
+</VirtualHost>
+##
+
+In cgconfig.conf
+
+##
+...
+group daemons/lamp {
+        perm {
+                task {
+                        uid = apache;
+                        gid = root;
+                }
+                admin {
+                        uid = root;
+                        gid = root;
+                }
+        }
+        cpu {
+                cpu.shares = 1000;
+        }
+
+        memory {
+                memory.memsw.limit_in_bytes = 512M;
+                memory.limit_in_bytes = 256M;
+        }
+	net_cls {
+		net_cls.classid = 0x10011
+	}
+}
+
+group daemons/lamp/vhost1 {
+        perm {
+                task {
+                        uid = apache;
+                        gid = root;
+                }
+                admin {
+                        uid = root;
+                        gid = root;
+                }
+        }
+        cpu {
+                cpu.shares = 100;
+        }
+
+        memory {
+                memory.memsw.limit_in_bytes = 512M;
+                memory.limit_in_bytes = 256M;
+        }
+}
+
+group daemons/lamp/vhost2 {
+        perm {
+                task {
+                        uid = apache;
+                        gid = root;
+                }
+                admin {
+                        uid = root;
+                        gid = root;
+                }
+        }
+        cpu {
+                cpu.shares = 25;
+        }
+
+        memory {
+                memory.memsw.limit_in_bytes = 64M;
+                memory.limit_in_bytes = 32M;
+        }
+        net_cls {
+                net_cls.classid = 0x10012;
+        }
+}
+...
+##
+
+In bash:
+##
+#!/bin/bash
+QDISC="tc qdisc add"
+CLASS="tc class add"
+FILTER="tc filter add"
+
+$QDISC dev eth0 parent root handle 1: hfsc default 11 
+$CLASS dev eth0 parent 1: classid 1:1 hfsc sc rate 12.5mbps ul rate 12.5mbps
+$CLASS dev eth0 parent 1:1 classid 1:11 hfsc sc rate 12.0mbps ul rate 12.5mbps
+$CLASS dev eth0 parent 1:1 classid 1:12 hfsc sc umax 1500 dmax 45ms rate 512kbps ul rate 1.5mbps
+
+$FILTER dev eth0 handle 1: parent 1: protocol ip prio 10 cgroup
+
+$QDISC dev eth0 parent 1:11 handle 11:0 pfifo
+$QDISC dev eth0 parent 1:12 handle 12:0 sfq perturb 10
+##
+
+
+FURTHER READING
+---------------
+
+If you dont know about cgroups. Read the kernel documentation on it.
+If you want to understand how to restrict the network throughput of vhosts, 
+the lartc offers excellent documentation on how to start. The net_cls controller
+documentation should fill in most of the other gaps.
+
+This is not documentated anywhere, but note with net_cls 64bit systems have the length of the class
+you input as always 0x4hex whereas 32 bit is 0x2hex.
+
+
+Matthew Ife
+matthew.ife@ukfast.co.uk
