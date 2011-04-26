@@ -122,7 +122,7 @@ prevent the host using too much bandwidth. Finally we offer less CPU time when u
 In httpd.conf
 
 ##
-LoadModule modules/mod_cgroup.so
+LoadModule cgroup_module modules/mod_cgroup.so
 
 NameVirtualHost *:80
 DefaultCGroup /daemons/lamp
