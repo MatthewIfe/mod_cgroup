@@ -20,7 +20,6 @@
 
 
 typedef struct cgroup cgroup;
-typedef struct cgroup_mount_point cgroup_mount_point;
 typedef struct cgroup_config cgroup_config;
 
 static bool cg_enabled = 0;
