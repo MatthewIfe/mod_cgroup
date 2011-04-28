@@ -1,10 +1,11 @@
-mod_cgroup - Resource management per vhost.
+mod_cgroup - Resource management per vhost
+==========================================
 
 PURPOSE
 =======
 
-mod_cgroup provides a system administrator with the capability to provide predictable service levels
-for each virtual host declared in httpd.
+mod_cgroup provides a system administrator with the capability to provide *predictable service levels*
+for each *virtual host* declared in httpd.
 
 mod_cgroup can be used for:
  - Offering grades of service per virtual host or a group of virtual hosts.
@@ -16,10 +17,10 @@ HOW TO USE
 ==========
 
 ###CGroup
-Description: Declares the CGroup a vhost will migrate to during content processing.
-Syntax: CGroup path 
-Default: /
-Context: server config, virtual host
+* Description: Declares the CGroup a vhost will migrate to during content processing.
+* Syntax: CGroup path 
+* Default: /
+* Context: server config, virtual host
 
 You use this parameter to declare the cgroup name to migrate a vhost to before processing.
 This takes the format used by libcgroup and cgconfig.conf MINUS the controllers.
