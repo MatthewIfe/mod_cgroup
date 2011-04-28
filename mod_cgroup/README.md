@@ -30,7 +30,7 @@ USAGE
 * Description: Declares the CGroup a vhost will migrate to during content processing.
 * Syntax: CGroup path 
 * Default: /
-* Context: server config, virtual host
+* Context: server config, virtual host, directory
 
 You use this parameter to declare the cgroup name to migrate a vhost to before processing.
 This takes the format used by libcgroup and cgconfig.conf MINUS the controllers.
@@ -43,7 +43,7 @@ e.g "/vhost1", "/apache/vhost2"
 * Default: /
 * Context: server config
 
-This parameter sets the cgruop to migrate to once processing of content has finished. This 
+This parameter sets the cgroup to migrate to once processing of content has finished. This 
 prevents you keeping workers in old cgroups for a vhost.
 This takes the format used by libcgroup and cgconfig.conf MINUS the controllers.
 e.g "/vhost1", "/apache/vhost2"

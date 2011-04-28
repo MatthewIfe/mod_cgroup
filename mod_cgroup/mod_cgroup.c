@@ -33,22 +33,29 @@ struct cgroup_config {
 module AP_MODULE_DECLARE_DATA cgroup_module;
 
 static const char* cgroup_vhost(cmd_parms *cmd, void *mconfig, const char *v1) {
+	cgroup_config *dirconfig = (cgroup_config *) mconfig;
 	cgroup_config *cgconf = ap_get_module_config(cmd->server->module_config, &cgroup_module);
 	apr_cpystrn(cgconf->cgroup, v1, 256);
+	apr_cpystrn(dirconfig->cgroup, v1, 256);
 	return NULL;
 }
 
 static const char* cgroup_default(cmd_parms *cmd, void *mconfig, const char *v1) {
+        cgroup_config *dirconfig = (cgroup_config *) mconfig;
         cgroup_config *cgconf = ap_get_module_config(cmd->server->module_config, &cgroup_module);
         apr_cpystrn(cgconf->default_cgroup, v1, 256);
+        apr_cpystrn(dirconfig->default_cgroup, v1, 256);
 	return NULL;
 }
 
 static const char* cgroup_relinquish(cmd_parms *cmd, void *mconfig, int arg) {
+        cgroup_config *dirconfig = (cgroup_config *) mconfig;
         cgroup_config *cgconf = ap_get_module_config(cmd->server->module_config, &cgroup_module);
         cgconf->relinquish = ACTIVE_ON;
+	dirconfig->relinquish = ACTIVE_ON;
 	if (arg == 0) {
 		cgconf->relinquish = ACTIVE_OFF;
+		dirconfig->relinquish = ACTIVE_OFF;
 	}
         return NULL;
 }
@@ -87,7 +94,7 @@ static int cgroup_handler(request_rec *r)
 		return DECLINED;
 	}
 
-	cgroup_config *cgconf = ap_get_module_config(r->server->module_config, &cgroup_module);
+	cgroup_config *cgconf = ap_get_module_config(r->per_dir_config, &cgroup_module);
 
         if ((mygroup = cgroup_new_cgroup(cgconf->cgroup)) == NULL) {
                 ap_log_rerror(APLOG_MARK, APLOG_ERR, errno, r, "Cannot allocate CGroup %s resources: %s", cgconf->cgroup, cgroup_strerror(ret));
@@ -98,7 +105,7 @@ static int cgroup_handler(request_rec *r)
         else if ((ret = cgroup_attach_task(mygroup)) > 0) {
                 ap_log_rerror(APLOG_MARK, APLOG_ERR, errno, r, "Cannot assign to CGroup %s: %s", cgconf->cgroup, cgroup_strerror(ret));
         }
-
+	ap_log_rerror(APLOG_MARK, APLOG_DEBUG, errno, r, "Using CGroup %s", cgconf->cgroup);
 	return DECLINED;
 }
 
@@ -111,7 +118,7 @@ static int cgroup_log_transaction(request_rec *r) {
 		return DECLINED;
 	}
 
-	cgroup_config *cgconf = ap_get_module_config(r->server->module_config, &cgroup_module);
+	cgroup_config *cgconf = ap_get_module_config(r->per_dir_config, &cgroup_module);
 
 	if (cgconf->relinquish == ACTIVE_OFF) {
 		return DECLINED;
@@ -126,7 +133,7 @@ static int cgroup_log_transaction(request_rec *r) {
         else if ((ret = cgroup_attach_task(mygroup)) > 0) {
                 ap_log_rerror(APLOG_MARK, APLOG_ERR, errno, r, "Cannot assign to CGroup %s: %s", cgconf->default_cgroup, cgroup_strerror(ret));
         }
-
+        ap_log_rerror(APLOG_MARK, APLOG_DEBUG, errno, r, "Moving back to CGroup %s", cgconf->default_cgroup);
 	return DECLINED;
 }
 
@@ -156,9 +163,33 @@ static void *cgroup_merge_server(apr_pool_t *pool, void *server1_conf, void *ser
 	return (void *) merged;
 }
 
+static void *cgroup_create_dir(apr_pool_t *pool, char *dirspec) {
+	char *dname;
+	dname = dirspec;
+        cgroup_config *cgconf = apr_pcalloc(pool, sizeof(cgroup_config));
+        apr_cpystrn(cgconf->default_cgroup, "/", 256);
+        apr_cpystrn(cgconf->cgroup, "/", 256);
+        cgconf->relinquish = ACTIVE_ON;
+
+        return cgconf;
+}
+
+static void *cgroup_merge_dir(apr_pool_t *pool, void *parent_conf, void *child_conf) {
+        cgroup_config *s1 = (cgroup_config *) parent_conf;
+        cgroup_config *s2 = (cgroup_config *) child_conf;
+        cgroup_config *merged = apr_pcalloc(pool, sizeof(cgroup_config));
+
+        apr_cpystrn(merged->default_cgroup, s1->default_cgroup, 256);
+	apr_cpystrn(merged->cgroup, s2->cgroup, 256);
+        merged->relinquish = s1->relinquish;
+	ap_log_perror(APLOG_MARK, APLOG_DEBUG, errno, pool, "s1: %s s2: %s m: %s", s1->cgroup, s2->cgroup, merged->cgroup);
+
+        return (void *) merged;
+}
+
 static const command_rec cgroup_cmds[] = {
         AP_INIT_TAKE1("cgroup",
-                        cgroup_vhost, NULL, RSRC_CONF,
+                        cgroup_vhost, NULL, RSRC_CONF|ACCESS_CONF,
                         "The cgroup you want to allocate the vhost to"),
         AP_INIT_TAKE1("defaultcgroup", 
 			cgroup_default, NULL, RSRC_CONF,
@@ -173,8 +204,8 @@ static const command_rec cgroup_cmds[] = {
 
 module AP_MODULE_DECLARE_DATA cgroup_module = {
     STANDARD20_MODULE_STUFF, 
-    NULL,                  /* create per-dir    config structures */
-    NULL,                  /* merge  per-dir    config structures */
+    cgroup_create_dir,                  /* create per-dir    config structures */
+    cgroup_merge_dir,                  /* merge  per-dir    config structures */
     cgroup_create_server,     /* create per-server config structures */
     cgroup_merge_server,                  /* merge  per-server config structures */
     cgroup_cmds,                  /* table of config file commands       */
