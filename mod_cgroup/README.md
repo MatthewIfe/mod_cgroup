@@ -142,100 +142,97 @@ In httpd.conf
 	   CGroup /daemons/lamp/vhost2
 	   DocumentRoot /var/www/html2
 	</VirtualHost>
-	##
 
 In cgconfig.conf
 
 ##
-...
-group daemons/lamp {
-        perm {
-                task {
-                        uid = apache;
-                        gid = root;
-                }
-                admin {
-                        uid = root;
-                        gid = root;
-                }
-        }
-        cpu {
-                cpu.shares = 1000;
-        }
-
-        memory {
-                memory.memsw.limit_in_bytes = 512M;
-                memory.limit_in_bytes = 256M;
-        }
-	net_cls {
-		net_cls.classid = 0x10011;
+	[...]
+	group daemons/lamp {
+	        perm {
+	                task {
+	                        uid = apache;
+	                        gid = root;
+	                }
+	                admin {
+	                        uid = root;
+	                        gid = root;
+	                }
+	        }
+	        cpu {
+	                cpu.shares = 1000;
+	        }
+	
+	        memory {
+	                memory.memsw.limit_in_bytes = 512M;
+	                memory.limit_in_bytes = 256M;
+	        }
+		net_cls {
+			net_cls.classid = 0x10011;
+		}
 	}
-}
-
-group daemons/lamp/vhost1 {
-        perm {
-                task {
-                        uid = apache;
-                        gid = root;
-                }
-                admin {
-                        uid = root;
-                        gid = root;
-                }
-        }
-        cpu {
-                cpu.shares = 100;
-        }
-
-        memory {
-                memory.memsw.limit_in_bytes = 512M;
-                memory.limit_in_bytes = 256M;
-        }
-}
-
-group daemons/lamp/vhost2 {
-        perm {
-                task {
-                        uid = apache;
-                        gid = root;
-                }
-                admin {
-                        uid = root;
-                        gid = root;
-                }
-        }
-        cpu {
-                cpu.shares = 25;
-        }
-
-        memory {
-                memory.memsw.limit_in_bytes = 64M;
-                memory.limit_in_bytes = 32M;
-        }
-        net_cls {
-                net_cls.classid = 0x10012;
-        }
-}
-...
-##
-
+	
+	group daemons/lamp/vhost1 {
+	        perm {
+	                task {
+	                        uid = apache;
+	                        gid = root;
+	                }
+	                admin {
+	                        uid = root;
+	                        gid = root;
+	                }
+	        }
+	        cpu {
+	                cpu.shares = 100;
+	        }
+	
+	        memory {
+	                memory.memsw.limit_in_bytes = 512M;
+	                memory.limit_in_bytes = 256M;
+	        }
+	}
+	
+	group daemons/lamp/vhost2 {
+	        perm {
+	                task {
+	                        uid = apache;
+	                        gid = root;
+	                }
+	                admin {
+	                        uid = root;
+	                        gid = root;
+	                }
+	        }
+	        cpu {
+	                cpu.shares = 25;
+	        }
+	
+	        memory {
+	                memory.memsw.limit_in_bytes = 64M;
+	                memory.limit_in_bytes = 32M;
+	        }
+	        net_cls {
+	                net_cls.classid = 0x10012;
+	        }
+	}
+	[...]
+	
 In bash:
-##
-#!/bin/bash
-QDISC="tc qdisc add"
-CLASS="tc class add"
-FILTER="tc filter add"
 
-$QDISC dev eth0 parent root handle 1: hfsc default 11 
-$CLASS dev eth0 parent 1: classid 1:1 hfsc sc rate 12.5mbps ul rate 12.5mbps
-$CLASS dev eth0 parent 1:1 classid 1:11 hfsc sc rate 12.0mbps ul rate 12.5mbps
-$CLASS dev eth0 parent 1:1 classid 1:12 hfsc sc umax 1500 dmax 45ms rate 512kbps ul rate 1.5mbps
-
-$FILTER dev eth0 handle 1: parent 1: protocol ip prio 10 cgroup
-
-$QDISC dev eth0 parent 1:11 handle 11:0 pfifo
-$QDISC dev eth0 parent 1:12 handle 12:0 sfq perturb 10
-##
+	#!/bin/bash
+	QDISC="tc qdisc add"
+	CLASS="tc class add"
+	FILTER="tc filter add"
+	
+	$QDISC dev eth0 parent root handle 1: hfsc default 11 
+	$CLASS dev eth0 parent 1: classid 1:1 hfsc sc rate 12.5mbps ul rate 12.5mbps
+	$CLASS dev eth0 parent 1:1 classid 1:11 hfsc sc rate 12.0mbps ul rate 12.5mbps
+	$CLASS dev eth0 parent 1:1 classid 1:12 hfsc sc umax 1500 dmax 45ms rate 512kbps ul rate 1.5mbps
+	
+	$FILTER dev eth0 handle 1: parent 1: protocol ip prio 10 cgroup
+	
+	$QDISC dev eth0 parent 1:11 handle 11:0 pfifo
+	$QDISC dev eth0 parent 1:12 handle 12:0 sfq perturb 10
 
 
 FURTHER READING
