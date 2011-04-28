@@ -1,7 +1,7 @@
 mod_cgroup - Resource management per vhost.
 
 PURPOSE
--------
+=======
 
 mod_cgroup provides a system administrator with the capability to provide predictable service levels
 for each virtual host declared in httpd.
@@ -13,7 +13,7 @@ mod_cgroup can be used for:
  - Ensuring a predictable capacity level is provided to all web services.
 
 HOW TO USE
-----------
+==========
 
 CGroup
 Description: Declares the CGroup a vhost will migrate to during content processing.
@@ -57,7 +57,7 @@ you want to declare. Typically this is done using cgconfig.conf in /etc.
 
 
 REQUIREMENTS
------------
+============
 
 This module is purposely designed to work on Linux only.
 The module requires a version of linux which comes with a functioning cgroups implementation.
@@ -66,9 +66,9 @@ however its likely to work on most of the earlier releases of this library.
 This is an apache2 module only.
 
 LIMITATIONS
------------
+===========
 
-YOUR MILEAGE WILL VARY BY THE TYPES OF CGROUPS YOU CONFIGURE.
+*YOUR MILEAGE WILL VARY BY THE TYPES OF CGROUPS YOU CONFIGURE.*
 
 Currently mod_cgroup offers no facilities to declare specific controllers in the group. Thus all controllers are migrated
 to when you migrate to a cgroup.
@@ -98,7 +98,7 @@ they are in before processing their request. This is because apache by default n
 files used in cgroups. Whilst this is unlikely you should be vigilant to this possibility.
 
 MEMORY CONTROLLER
------------------
+=================
 
 One cool thing about the memory controller is that it will 'charge' pages that were used in that cgroup even if the task migrates
 to another cgroup!
