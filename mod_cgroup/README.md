@@ -16,6 +16,7 @@ HOW TO USE
 ==========
 
 CGroup
+------
 Description: Declares the CGroup a vhost will migrate to during content processing.
 Syntax: CGroup path 
 Default: /
@@ -27,6 +28,7 @@ e.g "/vhost1", "/apache/vhost2"
 
 
 DefaultCGroup
+-------------
 Description: Declares the CGroup you relinquish to once processing has finished.
 Syntax: DefaultCGroup path
 Default: /
