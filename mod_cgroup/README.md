@@ -124,25 +124,25 @@ prevent the host using too much bandwidth. Finally we offer less CPU time when u
 In httpd.conf
 
 ##
-LoadModule cgroup_module modules/mod_cgroup.so
-
-NameVirtualHost *:80
-DefaultCGroup /daemons/lamp
-CGroup /daemons/lamp
-RelinquishCGroup on
-
-<VirtualHost *:80>
-   ServerName vhost1.com
-   CGroup /daemons/lamp/vhost1
-   DocumentRoot /var/www/html1
-</VirtualHost>
-
-<VirtualHost *:80>
-   ServerName vhost2.com
-   CGroup /daemons/lamp/vhost2
-   DocumentRoot /var/www/html2
-</VirtualHost>
-##
+	LoadModule cgroup_module modules/mod_cgroup.so
+	
+	NameVirtualHost *:80
+	DefaultCGroup /daemons/lamp
+	CGroup /daemons/lamp
+	RelinquishCGroup on
+	
+	<VirtualHost *:80>
+	   ServerName vhost1.com
+	   CGroup /daemons/lamp/vhost1
+	   DocumentRoot /var/www/html1
+	</VirtualHost>
+	
+	<VirtualHost *:80>
+	   ServerName vhost2.com
+	   CGroup /daemons/lamp/vhost2
+	   DocumentRoot /var/www/html2
+	</VirtualHost>
+	##
 
 In cgconfig.conf
 
