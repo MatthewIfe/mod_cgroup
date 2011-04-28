@@ -15,8 +15,7 @@ mod_cgroup can be used for:
 HOW TO USE
 ==========
 
-CGroup
-------
+###CGroup
 Description: Declares the CGroup a vhost will migrate to during content processing.
 Syntax: CGroup path 
 Default: /
@@ -27,12 +26,11 @@ This takes the format used by libcgroup and cgconfig.conf MINUS the controllers.
 e.g "/vhost1", "/apache/vhost2"
 
 
-DefaultCGroup
--------------
-Description: Declares the CGroup you relinquish to once processing has finished.
-Syntax: DefaultCGroup path
-Default: /
-Context: server config
+###DefaultCGroup
+* Description: Declares the CGroup you relinquish to once processing has finished.
+* Syntax: DefaultCGroup path
+* Default: /
+* Context: server config
 
 This parameter sets the cgruop to migrate to once processing of content has finished. This 
 prevents you keeping workers in old cgroups for a vhost.
@@ -40,11 +38,11 @@ This takes the format used by libcgroup and cgconfig.conf MINUS the controllers.
 e.g "/vhost1", "/apache/vhost2"
 
 
-RelinquishCGroup
-Description: Enabled or disables relinquishment of cgroups.
-Syntax: RelinquishCgroup on|off
-Default: on
-Context: server config
+###RelinquishCGroup
+* Description: Enabled or disables relinquishment of cgroups.
+* Syntax: RelinquishCgroup on|off
+* Default: on
+* Context: server config
 
 This parameter controls the behaviour of mod_cgroup once processing has finished. In nearly
 all circumstances you will want to keep this turned on as it ensures idle workers dont hang around
