@@ -109,7 +109,7 @@ What this means is that each individual vhost (or group of) is entirely responsi
 group! So a seperate vhost does not pay for the overused memory of the original vhost.
 
 SELINUX SUPPORT
----------------
+===============
 
 SELinux by default will prevent mod_cgroup from running properly by preventing access to the relevent tasks file.
 SELinux support for mod_cgroup is provided using the file mod_cgroup.pp. To enable it. Run:
@@ -117,13 +117,13 @@ SELinux support for mod_cgroup is provided using the file mod_cgroup.pp. To enab
   setsebool -P httpd_cgroup_control 1
 
 EXAMPLE
--------
+=======
+
 In the following example we give vhost2 much less memory to play with than vhost1, we also degrade outbound throughput to
 prevent the host using too much bandwidth. Finally we offer less CPU time when under high cpu load.
 
-In httpd.conf
-
-##
+httpd.conf
+----------
 	LoadModule cgroup_module modules/mod_cgroup.so
 	
 	NameVirtualHost *:80
@@ -143,9 +143,8 @@ In httpd.conf
 	   DocumentRoot /var/www/html2
 	</VirtualHost>
 
-In cgconfig.conf
-
-##
+cgconfig.conf
+-------------
 	[...]
 	group daemons/lamp {
 	        perm {
@@ -217,8 +216,8 @@ In cgconfig.conf
 	}
 	[...]
 	
-In bash:
-
+bash script
+-----------
 	#!/bin/bash
 	QDISC="tc qdisc add"
 	CLASS="tc class add"
@@ -236,7 +235,7 @@ In bash:
 
 
 FURTHER READING
----------------
+===============
 
 If you dont know about cgroups. Read the kernel documentation on it.
 If you want to understand how to restrict the network throughput of vhosts, 
