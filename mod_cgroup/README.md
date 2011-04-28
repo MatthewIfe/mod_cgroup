@@ -8,13 +8,22 @@ mod_cgroup provides a system administrator with the capability to provide *predi
 for each *virtual host* declared in httpd.
 
 mod_cgroup can be used for:
- - Offering grades of service per virtual host or a group of virtual hosts.
- - Protecting other virtual hosts from problematic resource abuse in another vhost.
- - Penalizing a virtual host which fails to respect resouce limitations.
- - Ensuring a predictable capacity level is provided to all web services.
+* Offering grades of service per virtual host or a group of virtual hosts.
+* Protecting other virtual hosts from problematic resource abuse in another vhost.
+* Penalizing a virtual host which fails to respect resouce limitations.
+* Ensuring a predictable capacity level is provided to all web services.
 
-HOW TO USE
-==========
+REQUIREMENTS
+============
+
+This module is purposely designed to work on Linux only.
+The module requires a version of linux which comes with a functioning cgroups implementation.
+The libcgroup library must be installed for the module to work as expected. It was written on version 0.36
+however its likely to work on most of the earlier releases of this library.
+This is an apache2 module only.
+
+USAGE
+=====
 
 ###CGroup
 * Description: Declares the CGroup a vhost will migrate to during content processing.
@@ -55,17 +64,6 @@ disabling the default behaviour.
 Note that to use this module you must have pre-configured cgroups designed to honour whatever service constraints
 you want to declare. Typically this is done using cgconfig.conf in /etc.
 
-
-
-REQUIREMENTS
-============
-
-This module is purposely designed to work on Linux only.
-The module requires a version of linux which comes with a functioning cgroups implementation.
-The libcgroup library must be installed for the module to work as expected. It was written on version 0.36
-however its likely to work on most of the earlier releases of this library.
-This is an apache2 module only.
-
 LIMITATIONS
 ===========
 
@@ -94,7 +92,7 @@ to free up space for worker 2.
 The circumstances of this happening are unlikely, because oom-killer will attempt to kill tasks that reside inside
 of its own cgroup.
 
-WARNING: The module offers no facility to prevent virtual hosts simply migrating themselves out of the cgroup
+**WARNING:** The module offers no facility to prevent virtual hosts simply migrating themselves out of the cgroup
 they are in before processing their request. This is because apache by default needs write access to manage the tasks
 files used in cgroups. Whilst this is unlikely you should be vigilant to this possibility.
 
@@ -244,6 +242,4 @@ documentation should fill in most of the other gaps.
 This is not documentated anywhere, but note with net_cls 64bit systems have the length of the class
 you input as always 0x4hex whereas 32 bit is 0x2hex.
 
-
-Matthew Ife
-matthew.ife@ukfast.co.uk
+[Matthew Ife][mailto:matthew.ife@ukfast.co.uk]
