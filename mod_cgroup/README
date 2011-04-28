@@ -166,7 +166,7 @@ group daemons/lamp {
                 memory.limit_in_bytes = 256M;
         }
 	net_cls {
-		net_cls.classid = 0x10011
+		net_cls.classid = 0x10011;
 	}
 }
 
