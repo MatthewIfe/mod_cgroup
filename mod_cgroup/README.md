@@ -8,6 +8,7 @@ mod_cgroup provides a system administrator with the capability to provide *predi
 for each *virtual host* declared in httpd.
 
 mod_cgroup can be used for:
+
 * Offering grades of service per virtual host or a group of virtual hosts.
 * Protecting other virtual hosts from problematic resource abuse in another vhost.
 * Penalizing a virtual host which fails to respect resouce limitations.
