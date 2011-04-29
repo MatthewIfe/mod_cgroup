@@ -120,6 +120,8 @@ EXAMPLE
 In the following example we give vhost2 much less memory to play with than vhost1, we also degrade outbound throughput to
 prevent the host using too much bandwidth. Finally we offer less CPU time when under high cpu load.
 
+We also attempt to put some files and locations into a restricted cgroup.
+
 httpd.conf
 ----------
 	LoadModule cgroup_module modules/mod_cgroup.so
@@ -133,12 +135,18 @@ httpd.conf
 	   ServerName vhost1.com
 	   CGroup /daemons/lamp/vhost1
 	   DocumentRoot /var/www/html1
+           <Location /hungry>
+               CGroup /daemons/lamp/restricted
+           </Location>
 	</VirtualHost>
 	
 	<VirtualHost *:80>
 	   ServerName vhost2.com
 	   CGroup /daemons/lamp/vhost2
 	   DocumentRoot /var/www/html2
+           <FilesMatch .php$>
+               CGroup /daemons/lamp/restricted
+           </FilesMatch>
 	</VirtualHost>
 
 cgconfig.conf
@@ -187,6 +195,27 @@ cgconfig.conf
 	                memory.memsw.limit_in_bytes = 512M;
 	                memory.limit_in_bytes = 256M;
 	        }
+	}
+
+	group daemons/lamp/restricted {
+		perm {
+			task {
+				uid = apache;
+				gid = root;
+			}
+			admin {
+				uid = root;
+				gid = root;
+			}
+		}
+		cpu {
+			cpu.shares = 50;
+		}
+
+		memory {
+			memory.memsw.limit_in_bytes = 512M;
+			memory.limit_in_bytes = 256M;
+		}
 	}
 	
 	group daemons/lamp/vhost2 {
