@@ -89,14 +89,19 @@ static int cgroup_handler(request_rec *r)
 {
         cgroup *mygroup;
         int ret =0;
+	bool cg_assigned = FALSE;
 
 	if (!cg_enabled) {
 		return DECLINED;
 	}
 
 	cgroup_config *cgconf = ap_get_module_config(r->per_dir_config, &cgroup_module);
+	mygroup = cgroup_new_cgroup(cgconf->cgroup);
 
-        if ((mygroup = cgroup_new_cgroup(cgconf->cgroup)) == NULL) {
+	if (mygroup != NULL) {
+		cg_assigned = TRUE;
+	}
+        if (mygroup == NULL) {
                 ap_log_rerror(APLOG_MARK, APLOG_ERR, errno, r, "Cannot allocate CGroup %s resources: %s", cgconf->cgroup, cgroup_strerror(ret));
         }
         else if ((ret = cgroup_get_cgroup(mygroup)) > 0) {
@@ -105,6 +110,9 @@ static int cgroup_handler(request_rec *r)
         else if ((ret = cgroup_attach_task(mygroup)) > 0) {
                 ap_log_rerror(APLOG_MARK, APLOG_ERR, errno, r, "Cannot assign to CGroup %s: %s", cgconf->cgroup, cgroup_strerror(ret));
         }
+	if (cg_assigned) {
+		cgroup_free(&mygroup);
+	}
 	ap_log_rerror(APLOG_MARK, APLOG_DEBUG, errno, r, "Using CGroup %s", cgconf->cgroup);
 	return DECLINED;
 }
@@ -113,6 +121,7 @@ static int cgroup_handler(request_rec *r)
 static int cgroup_log_transaction(request_rec *r) {
         cgroup *mygroup;
         int ret = 0;
+        bool cg_assigned = FALSE;
 
 	if (!cg_enabled) {
 		return DECLINED;
@@ -124,7 +133,11 @@ static int cgroup_log_transaction(request_rec *r) {
 		return DECLINED;
 	}
 
-	if ((mygroup = cgroup_new_cgroup(cgconf->default_cgroup)) == NULL) {
+	mygroup = cgroup_new_cgroup(cgconf->default_cgroup);
+	if (mygroup != NULL) {
+		cg_assigned = TRUE;
+	}
+	if (mygroup == NULL) {
                 ap_log_rerror(APLOG_MARK, APLOG_ERR, errno, r, "Cannot allocate CGroup %s resources: %s", cgconf->default_cgroup, cgroup_strerror(ret));
         }
         else if ((ret = cgroup_get_cgroup(mygroup)) > 0) {
@@ -134,6 +147,9 @@ static int cgroup_log_transaction(request_rec *r) {
                 ap_log_rerror(APLOG_MARK, APLOG_ERR, errno, r, "Cannot assign to CGroup %s: %s", cgconf->default_cgroup, cgroup_strerror(ret));
         }
         ap_log_rerror(APLOG_MARK, APLOG_DEBUG, errno, r, "Moving back to CGroup %s", cgconf->default_cgroup);
+	if (cg_assigned) {
+		cgroup_free(&mygroup);
+	}
 	return DECLINED;
 }
 
